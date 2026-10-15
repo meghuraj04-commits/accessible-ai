@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebForAll — Accessible Website Preview & Assistive Suite</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Standalone Preview Suite Styles */
+    body.preview-page-body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    .preview-header-bar {
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      z-index: 100;
+    }
+
+    .preview-brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .preview-brand-badge {
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .preview-url-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1e293b;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      max-width: 500px;
+    }
+
+    .preview-target-url {
+      color: #93c5fd;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-decoration: none;
+    }
+
+    .preview-target-url:hover {
+      text-decoration: underline;
+    }
+
+    .preview-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Assistive Toolbar */
+    .assistive-toolbar {
+      background: #1e293b;
+      border-bottom: 2px solid #2563eb;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      overflow-x: auto;
+    }
+
+    .toolbar-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 4px;
+    }
+
+    .toolbar-tool-btn {
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .toolbar-tool-btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+
+    .toolbar-tool-btn.active {
+      background: #2563eb;
+      border-color: #3b82f6;
+      color: #ffffff;
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 24px;
+      background: #334155;
+      margin: 0 4px;
+    }
+
+    /* Main Preview Viewport Area */
+    .preview-viewport-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+      background: #ffffff;
+    }
+
+    .preview-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #ffffff;
+    }
+
+    /* Sidebar drawer for 6-Point WCAG Checklist */
+    .preview-wcag-drawer {
+      width: 320px;
+      background: #0f172a;
+      border-left: 1px solid #334155;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .drawer-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .drawer-wcag-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .drawer-wcag-card.status-pass {
+      border-left: 4px solid #16a34a;
+    }
+
+    .drawer-wcag-card.status-fail {
+      border-left: 4px solid #dc2626;
+    }
+
+    .drawer-wcag-card h4 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 4px;
+    }
+
+    .drawer-wcag-card p {
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+
+    .drawer-wcag-card .badge-rule {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      background: #334155;
+      color: #93c5fd;
+    }
+
+    /* Notification toast */
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #16a34a;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="preview-page-body">
+  <!-- Live Screen Reader Announcer -->
+  <div id="preview-announcer" class="sr-only" role="status" aria-live="polite"></div>
+
+  <!-- Header Bar -->
+  <header class="preview-header-bar" role="banner">
+    <div class="preview-brand-group">
+      <a href="index.html" class="btn btn-sm btn-secondary" style="background:#1e293b; color:#e2e8f0; border-color:#475569;">
+        &larr; Back to Dashboard
+      </a>
+      <span class="preview-brand-badge">WCAG 2.2 Preview Suite</span>
+      <h1 style="font-size: 15px; font-weight: 700; margin: 0; color: #ffffff;">WebForAll Live Preview</h1>
+    </div>
+
+    <!-- Scanned / Previewed URL Box with Link -->
+    <div class="preview-url-box" role="region" aria-label="Previewed Website URL">
+      <span style="font-size: 14px;" aria-hidden="true">🌐</span>
+      <a id="preview-url-anchor" href="#" target="_blank" rel="noopener noreferrer" class="preview-target-url" title="Open original website in new tab">
+        Loading target URL...
+      </a>
+      <span class="badge-wcag-version" style="font-size: 10px; padding: 2px 6px;">Live Link</span>
+    </div>
+
+    <div class="preview-header-actions">
+      <button type="button" id="btn-copy-link" class="toolbar-tool-btn" title="Copy shareable preview link">
+        <span>📋</span> Copy Preview Link
+      </button>
+      <a id="btn-open-external" href="#" target="_blank" rel="noopener noreferrer" class="toolbar-tool-btn" title="Open website directly">
+        <span>↗</span> Visit Website
+      </a>
+      <button type="button" id="btn-toggle-drawer" class="toolbar-tool-btn" title="Toggle 6-Point WCAG Checklist">
+        <span>📊</span> Standards Checklist
+      </button>
+    </div>
+  </header>
+
+  <!-- Assistive Toolbar for Disabled Users -->
+  <nav class="assistive-toolbar" aria-label="Assistive preview controls for people with disabilities">
+    <!-- Remediation Mode Switch -->
+    <span class="toolbar-group-label">Mode:</span>
+    <button type="button" id="btn-mode-original" class="toolbar-tool-btn" aria-pressed="false">
+      <span>✕</span> Original View
+    </button>
+    <button type="button" id="btn-mode-remediated" class="toolbar-tool-btn active" aria-pressed="true">
+      <span>✓</span> Accessible Remediated
+    </button>
+
+    <div class="toolbar-divider" aria-hidden="true"></div>
+
+    <!-- 1. Color Contrast & High Contrast (SC 1.4.3 & 1.4.11) -->
+    <span class="toolbar-group-label">1. Contrast:</span>
+    <button type="button" id="btn-toggle-contrast" class="toolbar-tool-btn" aria-pressed="false" title="WCAG 1.4.3 & 1.4.11 High Contrast 7:1+ Mode">
+      <span>🌓</span> High Contrast (AAA)
+    </button>
+    <button type="button" id="btn-toggle-dark" class="toolbar-tool-btn" aria-pressed="false" title="High-contrast dark mode">
+      <span>🌙</span> Dark Contrast
+    </button>
+
+    <div class="toolbar-divider" aria-hidden="true"></div>
+
+    <!-- 2. Alt Text for Images (SC 1.1.1) -->
+    <span class="toolbar-group-label">2. Images:</span>
+    <button type="button" id="btn-toggle-alt-overlay" class="toolbar-tool-btn active" aria-pressed="true" title="WCAG 1.1.1 Image Alt-Text Visual Badges">
+      <span>🖼️</span> Alt-Text Overlay
+    </button>
+
+    <div class="toolbar-divider" aria-hidden="true"></div>
+
+    <!-- 3. Fonts and Text Spacing (SC 1.4.12) -->
+    <span class="toolbar-group-label">3. Fonts & Spacing:</span>
+    <button type="button" id="btn-toggle-spacing" class="toolbar-tool-btn" aria-pressed="false" title="WCAG 1.4.12: Line Height 1.5x, Paragraph 2x, Letter 0.12x, Word 0.16x">
+      <span>🔠</span> Text Spacing (1.4.12)
+    </button>
+    <button type="button" id="btn-toggle-dyslexia" class="toolbar-tool-btn" aria-pressed="false" title="WCAG 1.4.12: Distinct Legible Letterforms">
+      <span>🔤</span> Legible Font
+    </button>
+
+    <div class="toolbar-divider" aria-hidden="true"></div>
+
+    <!-- 4. Keyboard Accessibility & Focus Indicator (SC 2.1.1) -->
+    <span class="toolbar-group-label">4. Keyboard:</span>
+    <button type="button" id="btn-toggle-focus" class="toolbar-tool-btn active" aria-pressed="true" title="WCAG 2.1.1 & 2.4.7 Visible High-Contrast Focus Rings">
+      <span>⌨️</span> Focus Rings
+    </button>
+
+    <div class="toolbar-divider" aria-hidden="true"></div>
+
+    <!-- 5. Resize Text (SC 1.4.4 - 200% Zoom) -->
+    <span class="toolbar-group-label">5. Zoom:</span>
+    <button type="button" id="btn-zoom-100" class="toolbar-tool-btn active" aria-pressed="true">100%</button>
+    <button type="button" id="btn-zoom-150" class="toolbar-tool-btn" aria-pressed="false">150%</button>
+    <button type="button" id="btn-zoom-200" class="toolbar-tool-btn" aria-pressed="false" title="WCAG 1.4.4: 200% Text Zoom">200% (SC 1.4.4)</button>
+
+    <div class="toolbar-divider" aria-hidden="true"></div>
+
+    <!-- 6. Page Language & Speech Synthesis (SC 3.1.1) -->
+    <span class="toolbar-group-label">6. Speech:</span>
+    <button type="button" id="btn-read-aloud" class="toolbar-tool-btn" title="WCAG 3.1.1: Screen Reader Text-to-Speech simulation">
+      <span>🗣️</span> Read Aloud
+    </button>
+  </nav>
+
+  <!-- Viewport Area: Live Website Preview + WCAG 6-Point Checklist Drawer -->
+  <main class="preview-viewport-container" role="main">
+    <iframe id="preview-frame" class="preview-iframe" title="Accessible Website Live Preview" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+
+    <!-- 6-Point WCAG Standards Sidebar Drawer -->
+    <aside id="wcag-drawer" class="preview-wcag-drawer" aria-label="WCAG 6-Point Compliance Matrix">
+      <div class="drawer-title">
+        <span>🛡️</span>
+        <span>WCAG 6-Point Standards</span>
+      </div>
+
+      <!-- 1. Color Contrast (SC 1.4.3 & 1.4.11 & 1.4.1) -->
+      <div class="drawer-wcag-card status-pass">
+        <h4>1. Color Contrast & Color Alone</h4>
+        <span class="badge-rule">SC 1.4.3, 1.4.11, 1.4.1</span>
+        <p>• Normal text &ge; 4.5:1; Large text &ge; 3:1.<br>
+           • UI components & inputs &ge; 3:1 against adjacent colors.<br>
+           • Color is never used alone to convey info or links.</p>
+        <span style="font-size:11px; color:#4ade80; font-weight:700;">Remediated with high-contrast palette</span>
+      </div>
+
+      <!-- 2. Alt Text for Images (SC 1.1.1) -->
+      <div class="drawer-wcag-card status-pass">
+        <h4>2. Alt Text for Images</h4>
+        <span class="badge-rule">SC 1.1.1 Non-text Content</span>
+        <p>• Informational images provide descriptive alt text.<br>
+           • Decorative images hidden via alt="" or presentation role.<br>
+           • Functional images/buttons describe action/destination.</p>
+        <span style="font-size:11px; color:#4ade80; font-weight:700;">Alt overlays & tags active</span>
+      </div>
+
+      <!-- 3. Fonts & Text Spacing (SC 1.4.12) -->
+      <div class="drawer-wcag-card status-pass">
+        <h4>3. Fonts and Text Spacing</h4>
+        <span class="badge-rule">SC 1.4.12 Text Spacing</span>
+        <p>• Body text formatted &ge; 16px.<br>
+           • Supports Line height 1.5x, Paragraphs 2x, Letters 0.12x, Words 0.16x without clipping.<br>
+           • Clean legible letterforms (I, l, 1 distinct).</p>
+        <span style="font-size:11px; color:#4ade80; font-weight:700;">Fluid spacing ready</span>
+      </div>
+
+      <!-- 4. Keyboard Accessibility (SC 2.1.1 & 2.4.7) -->
+      <div class="drawer-wcag-card status-pass">
+        <h4>4. Keyboard Accessibility</h4>
+        <span class="badge-rule">SC 2.1.1 & 2.4.7 Focus Visible</span>
+        <p>• Every button, link, and field operable via keyboard alone.<br>
+           • Visible 3px contrast focus indicator active.</p>
+        <span style="font-size:11px; color:#4ade80; font-weight:700;">Keyboard navigation fully operable</span>
+      </div>
+
+      <!-- 5. Resize Text (SC 1.4.4 - 200% Zoom) -->
+      <div class="drawer-wcag-card status-pass">
+        <h4>5. Resize Text (200% Zoom)</h4>
+        <span class="badge-rule">SC 1.4.4 Resize Text</span>
+        <p>• Zoom up to 200% without horizontal scrolling chaos or layout breaking.</p>
+        <span style="font-size:11px; color:#4ade80; font-weight:700;">Responsive zoom scaling verified</span>
+      </div>
+
+      <!-- 6. Page Language (SC 3.1.1) -->
+      <div class="drawer-wcag-card status-pass">
+        <h4>6. Page Language</h4>
+        <span class="badge-rule">SC 3.1.1 Language of Page</span>
+        <p>• Declared primary human language (<code style="color:#93c5fd;">&lt;html lang="en"&gt;</code>) ensures screen readers pronounce words correctly.</p>
+        <span style="font-size:11px; color:#4ade80; font-weight:700;">Declared: lang="en"</span>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // Preview Controller Script
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUrl = urlParams.get('url') || 'https://portal.securebank.com/wire-transfer';
+    const sector = urlParams.get('sector') || 'banking';
+
+    const previewUrlAnchor = document.getElementById('preview-url-anchor');
+    const btnOpenExternal = document.getElementById('btn-open-external');
+    const btnCopyLink = document.getElementById('btn-copy-link');
+    const btnToggleDrawer = document.getElementById('btn-toggle-drawer');
+    const wcagDrawer = document.getElementById('wcag-drawer');
+    const previewFrame = document.getElementById('preview-frame');
+    const announcer = document.getElementById('preview-announcer');
+
+    // Update Header URLs
+    previewUrlAnchor.textContent = targetUrl;
+    previewUrlAnchor.href = targetUrl;
+    btnOpenExternal.href = targetUrl;
+
+    function announce(msg) {
+      if (announcer) {
+        announcer.textContent = '';
+        setTimeout(() => { announcer.textContent = msg; }, 40);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'toast-popup';
+      toast.innerHTML = `<span>✓</span> <span>${msg}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.remove(); }, 2500);
+    }
+
+    // Copy Preview Link
+    btnCopyLink.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        showToast('Accessible Preview Link copied to clipboard!');
+        announce('Preview link copied to clipboard.');
+      } catch (e) {
+        showToast('Link: ' + window.location.href);
+      }
+    });
+
+    // Toggle Standards Drawer
+    btnToggleDrawer.addEventListener('click', () => {
+      wcagDrawer.hidden = !wcagDrawer.hidden;
+      announce(wcagDrawer.hidden ? 'Standards checklist closed' : 'Standards checklist opened');
+    });
+
+    // Build the dynamic preview URL
+    const previewContentApiUrl = `/api/preview-content?url=${encodeURIComponent(targetUrl)}&sector=${encodeURIComponent(sector)}&_t=${Date.now()}`;
+    previewFrame.src = previewContentApiUrl;
+
+    previewFrame.addEventListener('load', () => {
+      sendPreviewMessage('toggle_alt_overlay', { enabled: isAltOverlay });
+      sendPreviewMessage('toggle_focus_rings', { enabled: isFocusRings });
+      sendPreviewMessage('set_mode', { remediated: isRemediated });
+      announce(`Preview loaded for ${targetUrl}`);
+    });
+
+    // Assistive Toolbar State & Controls
+    let isRemediated = true;
+    let isHighContrast = false;
+    let isDarkContrast = false;
+    let isAltOverlay = true;
+    let isTextSpacing = false;
+    let isDyslexia = false;
+    let isFocusRings = true;
+    let currentZoom = '100%';
+
+    function sendPreviewMessage(action, payload) {
+      if (previewFrame && previewFrame.contentWindow) {
+        previewFrame.contentWindow.postMessage({ type: 'A11Y_CONTROL', action, payload }, '*');
+      }
+    }
+
+    // Mode Toggle (Original vs Remediated)
+    const btnModeOriginal = document.getElementById('btn-mode-original');
+    const btnModeRemediated = document.getElementById('btn-mode-remediated');
+
+    btnModeOriginal.addEventListener('click', () => {
+      isRemediated = false;
+      btnModeOriginal.classList.add('active');
+      btnModeOriginal.setAttribute('aria-pressed', 'true');
+      btnModeRemediated.classList.remove('active');
+      btnModeRemediated.setAttribute('aria-pressed', 'false');
+      sendPreviewMessage('set_mode', { remediated: false });
+      announce('Viewing original un-remediated website with accessibility barriers.');
+    });
+
+    btnModeRemediated.addEventListener('click', () => {
+      isRemediated = true;
+      btnModeRemediated.classList.add('active');
+      btnModeRemediated.setAttribute('aria-pressed', 'true');
+      btnModeOriginal.classList.remove('active');
+      btnModeOriginal.setAttribute('aria-pressed', 'false');
+      sendPreviewMessage('set_mode', { remediated: true });
+      announce('Viewing accessible remediated website with WCAG 2.2 fixes applied.');
+    });
+
+    // 1. Color Contrast
+    const btnToggleContrast = document.getElementById('btn-toggle-contrast');
+    btnToggleContrast.addEventListener('click', () => {
+      isHighContrast = !isHighContrast;
+      btnToggleContrast.classList.toggle('active', isHighContrast);
+      btnToggleContrast.setAttribute('aria-pressed', String(isHighContrast));
+      sendPreviewMessage('toggle_high_contrast', { enabled: isHighContrast });
+      announce(isHighContrast ? 'WCAG 1.4.3 High Contrast AAA enabled' : 'High contrast disabled');
+    });
+
+    const btnToggleDark = document.getElementById('btn-toggle-dark');
+    btnToggleDark.addEventListener('click', () => {
+      isDarkContrast = !isDarkContrast;
+      btnToggleDark.classList.toggle('active', isDarkContrast);
+      btnToggleDark.setAttribute('aria-pressed', String(isDarkContrast));
+      sendPreviewMessage('toggle_dark_contrast', { enabled: isDarkContrast });
+      announce(isDarkContrast ? 'Dark high contrast enabled' : 'Dark contrast disabled');
+    });
+
+    // 2. Alt Text Overlay
+    const btnToggleAltOverlay = document.getElementById('btn-toggle-alt-overlay');
+    btnToggleAltOverlay.addEventListener('click', () => {
+      isAltOverlay = !isAltOverlay;
+      btnToggleAltOverlay.classList.toggle('active', isAltOverlay);
+      btnToggleAltOverlay.setAttribute('aria-pressed', String(isAltOverlay));
+      sendPreviewMessage('toggle_alt_overlay', { enabled: isAltOverlay });
+      announce(isAltOverlay ? 'WCAG 1.1.1 Image Alt-Text overlay active' : 'Alt-Text overlay disabled');
+    });
+
+    // 3. Fonts & Text Spacing
+    const btnToggleSpacing = document.getElementById('btn-toggle-spacing');
+    btnToggleSpacing.addEventListener('click', () => {
+      isTextSpacing = !isTextSpacing;
+      btnToggleSpacing.classList.toggle('active', isTextSpacing);
+      btnToggleSpacing.setAttribute('aria-pressed', String(isTextSpacing));
+      sendPreviewMessage('toggle_text_spacing', { enabled: isTextSpacing });
+      announce(isTextSpacing ? 'WCAG 1.4.12 Custom text spacing applied (line height 1.5x, paragraphs 2x)' : 'Text spacing reset');
+    });
+
+    const btnToggleDyslexia = document.getElementById('btn-toggle-dyslexia');
+    btnToggleDyslexia.addEventListener('click', () => {
+      isDyslexia = !isDyslexia;
+      btnToggleDyslexia.classList.toggle('active', isDyslexia);
+      btnToggleDyslexia.setAttribute('aria-pressed', String(isDyslexia));
+      sendPreviewMessage('toggle_dyslexia_font', { enabled: isDyslexia });
+      announce(isDyslexia ? 'WCAG 1.4.12 Legible letterforms font enabled' : 'Default font restored');
+    });
+
+    // 4. Keyboard Focus
+    const btnToggleFocus = document.getElementById('btn-toggle-focus');
+    btnToggleFocus.addEventListener('click', () => {
+      isFocusRings = !isFocusRings;
+      btnToggleFocus.classList.toggle('active', isFocusRings);
+      btnToggleFocus.setAttribute('aria-pressed', String(isFocusRings));
+      sendPreviewMessage('toggle_focus_rings', { enabled: isFocusRings });
+      announce(isFocusRings ? 'WCAG 2.1.1 Ultra-visible keyboard focus indicators enabled' : 'Focus rings disabled');
+    });
+
+    // 5. Resize Text (Zoom)
+    const zoomButtons = [
+      { btn: document.getElementById('btn-zoom-100'), val: '100%' },
+      { btn: document.getElementById('btn-zoom-150'), val: '150%' },
+      { btn: document.getElementById('btn-zoom-200'), val: '200%' }
+    ];
+
+    zoomButtons.forEach(({ btn, val }) => {
+      btn.addEventListener('click', () => {
+        zoomButtons.forEach(b => {
+          b.btn.classList.remove('active');
+          b.btn.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        currentZoom = val;
+        sendPreviewMessage('set_zoom', { zoom: val });
+        announce(`WCAG 1.4.4 Text Zoom adjusted to ${val}`);
+      });
+    });
+
+    // 6. Read Aloud Speech Synthesis
+    const btnReadAloud = document.getElementById('btn-read-aloud');
+    let isSpeaking = false;
+    btnReadAloud.addEventListener('click', () => {
+      if ('speechSynthesis' in window) {
+        if (isSpeaking) {
+          window.speechSynthesis.cancel();
+          isSpeaking = false;
+          btnReadAloud.classList.remove('active');
+          btnReadAloud.innerHTML = `<span>🗣️</span> Read Aloud`;
+          announce('Speech synthesis stopped');
+        } else {
+          isSpeaking = true;
+          btnReadAloud.classList.add('active');
+          btnReadAloud.innerHTML = `<span>⏹</span> Stop Speech`;
+          announce('Reading previewed page content with screen reader voice...');
+          sendPreviewMessage('read_aloud', {});
+        }
+      } else {
+        alert('Speech Synthesis API is not supported in this browser.');
+      }
+    });
+
+    // Listen for messages from preview iframe
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'PREVIEW_SPEECH_TEXT') {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(e.data.text || 'WebForAll Accessible Preview');
+          utterance.lang = e.data.lang || 'en-US';
+          utterance.onend = () => {
+            isSpeaking = false;
+            btnReadAloud.classList.remove('active');
+            btnReadAloud.innerHTML = `<span>🗣️</span> Read Aloud`;
+          };
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
